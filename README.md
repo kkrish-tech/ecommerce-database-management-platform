@@ -106,4 +106,7 @@ python user_interface.py
 
 Open your browser and navigate to http://127.0.0.1:5000 to access the application dashboard.
 
+## 🎬 DEMO
+
+https://github.com/user-attachments/assets/7929a0cb-f9cf-4689-8695-267d07e5fae1
 
