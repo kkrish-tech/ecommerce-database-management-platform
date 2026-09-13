@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Product Reviews</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+</head>
+<body style="margin: 0; background-color: #f4f6f9;">
+
+    <div style="padding: 20px 40px 0 40px;">
+        <div class="nav-links" style="justify-content: space-between; align-items: center;">
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <a href="{{ url_for('index') }}">Home / Dashboard</a>
+                <a href="{{ url_for('customer_products') }}">Products</a>
+                <a href="{{ url_for('customer_orders') }}">My Orders</a>
+                <a href="{{ url_for('customer_reviews') }}">My Reviews</a>
+            </div>
+            
+            {% if session.get('user_id') %}
+            <div class="profile-dropdown">
+                <button class="profile-btn" onclick="toggleDropdown()">👤 {{ session.get('user_name', 'Profile') }} ▼</button>
+                <div id="profileDropdown" class="dropdown-content">
+                    <span class="dropdown-role">Role: <strong>{{ session.get('role')|capitalize }}</strong></span>
+                    <a href="{{ url_for('change_password') }}">Change Password</a>
+                    <a href="{{ url_for('logout') }}" class="logout-link">Log Out</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div style="padding: 0px 40px 40px 40px;">
+        <h2>Product Reviews</h2>
+        <p class="text-muted">Share your thoughts on products you've purchased.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div style="background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 30px;">
+            <h4>Leave a Review</h4>
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="product_id" class="form-label">Select Purchased Product:</label>
+                    <select name="product_id" class="form-control" required>
+                        <option value="" disabled selected>-- Select a product you bought --</option>
+                        {% for prod in purchased_products %}
+                        <option value="{{ prod.ProductID }}">{{ prod.ProductName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="rating" class="form-label">Rating (1 to 5 Stars):</label>
+                    <select name="rating" class="form-control" required>
+                        <option value="5">⭐⭐⭐⭐⭐ (5 - Excellent)</option>
+                        <option value="4">⭐⭐⭐⭐ (4 - Good)</option>
+                        <option value="3">⭐⭐⭐ (3 - Average)</option>
+                        <option value="2">⭐⭐ (2 - Poor)</option>
+                        <option value="1">⭐ (1 - Terrible)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="comment" class="form-label">Comments:</label>
+                    <textarea name="comment" class="form-control" rows="3" placeholder="Write your review here..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit Review</button>
+            </form>
+        </div>
+
+        <div style="background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h4>Your Submitted Reviews</h4>
+            <table class="table mt-3">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Rating</th>
+                        <th>Comment</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for review in my_reviews %}
+                    <tr>
+                        <td>{{ review.ProductName }}</td>
+                        <td>{{ review.RatingStar }} / 5 ⭐</td>
+                        <td>{{ review.Comment }}</td>
+                        <td>{{ review.Date }}</td>
+                        <td>
+                            <a href="{{ url_for('edit_customer_review', review_id=review.ReviewID) }}" class="btn btn-sm btn-warning">Edit</a>
+                            <form action="{{ url_for('delete_customer_review', review_id=review.ReviewID) }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this review?');">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">You haven't written any reviews yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

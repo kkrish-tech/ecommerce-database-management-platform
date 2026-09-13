@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Review - System Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+</head>
+<body>
+    <div class="nav-links" style="justify-content: space-between; align-items: center;">
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <a href="{{ url_for('index') }}">Home / Dashboard</a>
+            <a href="{{ url_for('manager_reviews') }}">Back to Reviews</a>
+        </div>
+
+        {% if session.get('user_id') %}
+        <div class="profile-dropdown" style="position: relative; display: inline-block;">
+            <button class="profile-btn" onclick="toggleDropdown()">👤 {{ session.get('user_name', 'Profile') }} ▼</button>
+            <div id="profileDropdown" class="dropdown-content">
+                <span class="dropdown-role">Role: <strong>{{ session.get('role')|capitalize }}</strong></span>
+                <a href="{{ url_for('change_password') }}">Change Password</a>
+                <a href="{{ url_for('logout') }}" class="logout-link">Log Out</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <h1>Edit Review</h1>
+
+    <div class="form-box">
+        <form method="POST">
+            <label>Rating (1-5):</label>
+            <select name="rating" required>
+                <option value="5" {% if review.RatingStar == 5 %}selected{% endif %}>5 - Excellent</option>
+                <option value="4" {% if review.RatingStar == 4 %}selected{% endif %}>4 - Good</option>
+                <option value="3" {% if review.RatingStar == 3 %}selected{% endif %}>3 - Average</option>
+                <option value="2" {% if review.RatingStar == 2 %}selected{% endif %}>2 - Poor</option>
+                <option value="1" {% if review.RatingStar == 1 %}selected{% endif %}>1 - Terrible</option>
+            </select>
+            
+            <label>Comment:</label>
+            <textarea name="comment" rows="4" required>{{ review.Comment }}</textarea>
+            
+            <button type="submit">Update Review</button>
+            <a href="{{ url_for('manager_reviews') }}" class="btn btn-danger" style="text-decoration: none; display: inline-block; text-align: center; margin-top: 10px;">Cancel</a>
+        </form>
+    </div>
+</body>
+</html>

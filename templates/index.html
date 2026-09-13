@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>E-Commerce System Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+    <style>
+        .dashboard-wrapper .card {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        .dashboard-wrapper table {
+            width: 100% !important;
+            table-layout: auto !important;
+        }
+        .dashboard-wrapper .row {
+            display: flex !important;
+            flex-wrap: wrap !important;
+        }
+    </style>
+</head>
+<body style="margin: 0; background-color: #f8f9fa;">
+
+    <!-- Navigation Header -->
+    <div style="padding: 20px 40px 0 40px;">
+        <div class="nav-links" style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <a href="{{ url_for('index') }}">Home / Dashboard</a>
+                {% if session.get('role') == 'admin' %}
+                <a href="{{ url_for('manage_categories') }}">Categories</a>
+                <a href="{{ url_for('manage_vendors') }}">Vendors</a>
+                <a href="{{ url_for('manage_customers') }}">Customers</a>
+                <a href="{{ url_for('manage_products') }}">Products</a>
+                <a href="{{ url_for('manager_orders') }}">Manage Orders</a>
+                <a href="{{ url_for('manager_reviews') }}">Reviews</a>
+                {% elif session.get('role') == 'customer' %}
+                <a href="{{ url_for('customer_products') }}">Products</a>
+                <a href="{{ url_for('customer_orders') }}">My Orders</a>
+                <a href="{{ url_for('customer_reviews') }}">My Reviews</a>
+                {% elif session.get('role') == 'vendor' %}
+                <a href="{{ url_for('vendor_products') }}">My Products</a>
+                <a href="{{ url_for('vendor_orders') }}">Product Orders</a>
+                <a href="{{ url_for('vendor_reviews') }}">Product Reviews</a>
+                {% endif %}
+            </div>
+
+            {% if session.get('user_id') %}
+            <div class="profile-dropdown">
+                <button class="profile-btn" onclick="toggleDropdown()">👤 {{ session.get('user_name', 'Profile') }} ▼</button>
+                <div id="profileDropdown" class="dropdown-content">
+                    <span class="dropdown-role">Role: <strong>{{ session.get('role')|capitalize }}</strong></span>
+                    <a href="{{ url_for('change_password') }}">Change Password</a>
+                    <a href="{{ url_for('logout') }}" class="logout-link">Log Out</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Main Dashboard  -->
+    <div class="container-fluid dashboard-wrapper px-4 py-4">
+        <h2 class="mb-1">E-Commerce System Dashboard</h2>
+        <p class="text-muted mb-4">System-wide statistical reports, inventory analysis, and managerial summaries.</p>
+
+        <!-- REPORT 1 -->
+        <h4 class="mb-3 text-secondary">Report 1: Catalog & Pricing High-Level Summary</h4>
+        <div class="row g-3 mb-4">
+            <div class="col">
+                <div class="card shadow-sm border-0 p-3 bg-white text-center">
+                    <span class="text-muted small fw-semibold">Total Products (COUNT)</span>
+                    <h3 class="fw-bold mb-0 mt-1">{{ product_count }}</h3>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card shadow-sm border-0 p-3 bg-white text-center">
+                    <span class="text-muted small fw-semibold">Total Stock (SUM)</span>
+                    <h3 class="fw-bold mb-0 mt-1">{{ total_stock }}</h3>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card shadow-sm border-0 p-3 bg-white text-center">
+                    <span class="text-muted small fw-semibold">Avg Product Price (AVG)</span>
+                    <h3 class="fw-bold mb-0 mt-1 text-primary">${{ "%.2f"|format(avg_price) }}</h3>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card shadow-sm border-0 p-3 bg-white text-center">
+                    <span class="text-muted small fw-semibold">Min Price (MIN)</span>
+                    <h3 class="fw-bold mb-0 mt-1 text-success">${{ "%.2f"|format(min_price) }}</h3>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card shadow-sm border-0 p-3 bg-white text-center">
+                    <span class="text-muted small fw-semibold">Max Price (MAX)</span>
+                    <h3 class="fw-bold mb-0 mt-1 text-danger">${{ "%.2f"|format(max_price) }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- REPORTS 2 -->
+        <div class="row g-4">
+            <!-- REPORT 2: SALES SUMMARY -->
+            <div class="col-12 col-lg-6">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-dark text-white fw-bold">
+                        Report 2: Financial Sales Summary by Order Status
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Status</th>
+                                    <th>Orders (COUNT)</th>
+                                    <th>Avg Revenue (AVG)</th>
+                                    <th>Total Revenue (SUM)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in sales_summary %}
+                                <tr>
+                                    <td><span class="badge bg-secondary">{{ row.OrderStatus }}</span></td>
+                                    <td>{{ row.OrderCount }}</td>
+                                    <td>${{ "%.2f"|format(row.AvgOrderValue or 0) }}</td>
+                                    <td><strong>${{ "%.2f"|format(row.TotalRevenue or 0) }}</strong></td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="4" class="text-muted text-center py-3">No sales data available.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REPORT 3 -->
+            <div class="col-12 col-lg-6">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-dark text-white fw-bold">
+                        Report 3: Vendor Inventory Breakdown
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Vendor Name</th>
+                                    <th>Products Supplied (COUNT)</th>
+                                    <th>Total Stock On Hand (SUM)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for v in vendor_summary %}
+                                <tr>
+                                    <td>{{ v.VendorName }}</td>
+                                    <td>{{ v.TotalProducts }}</td>
+                                    <td><strong>{{ v.TotalStock }}</strong> units</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="3" class="text-muted text-center py-3">No vendor data available.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REPORT 4 -->
+            <div class="col-12 col-lg-6">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-dark text-white fw-bold">
+                        Report 4: Category Pricing Extremes & Averages
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Min Price (MIN)</th>
+                                    <th>Avg Price (AVG)</th>
+                                    <th>Max Price (MAX)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cat in category_summary %}
+                                <tr>
+                                    <td>{{ cat.CategoryName }}</td>
+                                    <td class="text-success">${{ "%.2f"|format(cat.MinPrice or 0) }}</td>
+                                    <td>${{ "%.2f"|format(cat.AvgPrice or 0) }}</td>
+                                    <td class="text-danger">${{ "%.2f"|format(cat.MaxPrice or 0) }}</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="4" class="text-muted text-center py-3">No category data available.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REPORT 5 -->
+            <div class="col-12 col-lg-6">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-dark text-white fw-bold">
+                        Report 5: Customer Satisfaction & Product Ratings
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product Name</th>
+                                    <th>Total Reviews (COUNT)</th>
+                                    <th>Average Rating (AVG)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rev in review_summary %}
+                                <tr>
+                                    <td>{{ rev.ProductName }}</td>
+                                    <td>{{ rev.TotalReviews }}</td>
+                                    <td>⭐ <strong>{{ "%.1f"|format(rev.AvgRating or 0) }}</strong> / 5.0</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="3" class="text-muted text-center py-3">No review data available.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

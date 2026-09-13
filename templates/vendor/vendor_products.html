@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Supplied Products</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+</head>
+<body style="margin: 0; background-color: #f4f6f9;">
+
+    <div style="padding: 20px 40px 0 40px;">
+        <div class="nav-links" style="justify-content: space-between; align-items: center;">
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <a href="{{ url_for('index') }}">Home / Dashboard</a>
+
+                {% if session.get('role') == 'admin' %}
+                <a href="{{ url_for('manage_categories') }}">Categories</a>
+                <a href="{{ url_for('manage_vendors') }}">Vendors</a>
+                <a href="{{ url_for('manage_customers') }}">Customers</a>
+                <a href="{{ url_for('manage_products') }}">Products</a>
+                <a href="{{ url_for('manager_orders') }}">Manage Orders</a>
+                <a href="{{ url_for('manager_reviews') }}">Reviews</a>
+
+                {% elif session.get('role') == 'customer' %}
+                <a href="{{ url_for('customer_products') }}">Products</a>
+                <a href="{{ url_for('customer_orders') }}">My Orders</a>
+                <a href="{{ url_for('customer_reviews') }}">My Reviews</a>
+
+                {% elif session.get('role') == 'vendor' %}
+                <a href="{{ url_for('vendor_products') }}">My Products</a>
+                <a href="{{ url_for('vendor_orders') }}">Product Orders</a>
+                <a href="{{ url_for('vendor_reviews') }}">Product Reviews</a>
+                {% endif %}
+            </div>
+
+            {% if session.get('user_id') %}
+            <div class="profile-dropdown">
+                <button class="profile-btn" onclick="toggleDropdown()">👤 {{ session.get('user_name', 'Profile') }} ▼</button>
+                <div id="profileDropdown" class="dropdown-content">
+                    <span class="dropdown-role">Role: <strong>{{ session.get('role')|capitalize }}</strong></span>
+                    <a href="{{ url_for('change_password') }}">Change Password</a>
+                    <a href="{{ url_for('logout') }}" class="logout-link">Log Out</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div style="padding: 0 40px 40px 40px;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h2>My Supplied Products</h2>
+                <p class="text-muted mb-0">Manage inventory, prices, and categories for items supplied by your business.</p>
+            </div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">+ Add New Product</button>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} mt-2">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div style="background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 20px;">
+            <table style="width: 100%;" class="table table-bordered align-middle">
+                <thead>
+                    <tr>
+                        <th>Product ID</th>
+                        <th>Product Name</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Country of Origin</th>
+                        <th>Description</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td><strong>#{{ product.ProductID }}</strong></td>
+                        <td>{{ product.ProductName }}</td>
+                        <td>
+                            {% if product.CategoryName %}
+                                <span class="badge bg-secondary">{{ product.CategoryName }}</span>
+                            {% else %}
+                                <span class="text-muted">Uncategorized</span>
+                            {% endif %}
+                        </td>
+                        <td>${{ "%.2f"|format(product.Price) }}</td>
+                        <td>
+                            {% if product.StockQuantity > 10 %}
+                                <span class="badge bg-success">{{ product.StockQuantity }} in stock</span>
+                            {% elif product.StockQuantity > 0 %}
+                                <span class="badge bg-warning text-dark">{{ product.StockQuantity }} low stock</span>
+                            {% else %}
+                                <span class="badge bg-danger">Out of stock</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ product.CountryOfOrigin or 'N/A' }}</td>
+                        <td><small class="text-muted">{{ product.Description or 'No description provided' }}</small></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ product.ProductID }}">Edit</button>
+                        </td>
+                    </tr>
+
+                    <!-- Edit Product Modal -->
+                    <div class="modal fade" id="editModal{{ product.ProductID }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form action="{{ url_for('vendor_edit_product', product_id=product.ProductID) }}" method="POST">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Edit Product #{{ product.ProductID }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Product Name</label>
+                                            <input type="text" name="product_name" class="form-control" value="{{ product.ProductName }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Category</label>
+                                            <select name="category_id" class="form-select">
+                                                <option value="">-- No Category --</option>
+                                                {% for cat in categories %}
+                                                    <option value="{{ cat.CategoryID }}" {% if cat.CategoryID == product.CategoryID %}selected{% endif %}>
+                                                        {{ cat.CategoryName }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Price ($)</label>
+                                                <input type="number" step="0.01" name="price" class="form-control" value="{{ product.Price }}" required>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Stock Quantity</label>
+                                                <input type="number" name="stock_quantity" class="form-control" value="{{ product.StockQuantity }}" required>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Country of Origin</label>
+                                            <input type="text" name="country_of_origin" class="form-control" value="{{ product.CountryOfOrigin or '' }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Description</label>
+                                            <textarea name="description" class="form-control" rows="3">{{ product.Description or '' }}</textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted">No products assigned to your vendor account yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade" id="addProductModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="{{ url_for('vendor_add_product') }}" method="POST">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add New Product</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Product Name</label>
+                            <input type="text" name="product_name" class="form-control" placeholder="e.g. Ergonomic Keyboard" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Category</label>
+                            <select name="category_id" class="form-select">
+                                <option value="" selected>-- Select Category --</option>
+                                {% for cat in categories %}
+                                    <option value="{{ cat.CategoryID }}">{{ cat.CategoryName }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Price ($)</label>
+                                <input type="number" step="0.01" name="price" class="form-control" placeholder="49.99" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Stock Quantity</label>
+                                <input type="number" name="stock_quantity" class="form-control" placeholder="100" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Country of Origin</label>
+                            <input type="text" name="country_of_origin" class="form-control" placeholder="e.g. USA">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea name="description" class="form-control" rows="3" placeholder="Enter product description..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">Add Product</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

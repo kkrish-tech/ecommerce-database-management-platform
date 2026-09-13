@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Customer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="nav-links">
+        <a href="{{ url_for('index') }}">Home / Dashboard</a>
+        <a href="{{ url_for('manage_categories') }}">Categories</a>
+        <a href="{{ url_for('manage_vendors') }}">Vendors</a>
+        <a href="{{ url_for('manage_customers') }}">Customers</a>
+        <a href="{{ url_for('manage_products') }}">Products</a>
+    </div>
+
+    <h1>Edit Customer</h1>
+
+    <div class="form-box">
+        <form action="{{ url_for('edit_customer', customer_id=customer.CustomerID) }}" method="POST">
+            <label for="customer_name">Customer Name:</label>
+            <input type="text" id="customer_name" name="customer_name" value="{{ customer.CustomerName }}" required>
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" value="{{ customer.Email }}" required>
+
+            <label for="phone_number">Phone Number:</label>
+            <input type="tel" id="phone_number" name="phone_number" value="{{ customer.PhoneNumber }}">
+
+
+            <label for="customer_status">Customer Status:</label>
+            <select id="customer_status" name="customer_status" required>
+                <option value="Active" {% if customer.CustomerStatus == 'Active' %}selected{% endif %}>Active</option>
+                <option value="Inactive" {% if customer.CustomerStatus == 'Inactive' %}selected{% endif %}>Inactive</option>
+            </select>
+
+            <label for="shipping_address">Shipping Address:</label>
+            <textarea id="shipping_address" name="shipping_address">{{ customer.ShippingAddress }}</textarea>
+
+            <label for="manager_id">System Manager:</label>
+            <select id="manager_id" name="manager_id">
+                <option value="">-- None --</option>
+                {% for mgr in managers %}
+                    <option value="{{ mgr.ManagerID }}" {% if customer.ManagerID == mgr.ManagerID %}selected{% endif %}>{{ mgr.Name }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit">Update Customer</button>
+        </form>
+    </div>
+</body>
+</html>
